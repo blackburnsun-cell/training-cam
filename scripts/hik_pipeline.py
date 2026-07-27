@@ -660,18 +660,28 @@ def run_capture(output_dir):
     results = []
     for cam in CAMERAS:
         print(f"[Capture] {cam['name']} (channel={cam['channelNo']})...")
-        try:
-            capture_url = client.capture_image(
-                user_token, NVR_SERIAL, cam["channelNo"])
-            fname = f"{timestamp}_{cam['name']}.jpg"
-            dest = output_dir / fname
-            size = download_image(capture_url, str(dest))
-            print(f"[Capture] Saved: {dest} ({size:,} bytes)")
-            results.append({"name": cam["name"], "path": str(dest), "size": size})
-        except Exception as e:
-            print(f"[Capture] ERROR {cam['name']}: {e}")
-            results.append({"name": cam["name"], "path": None, "error": str(e)})
-        time.sleep(2)  # API rate limit
+        # Retry up to 3 times on failure (API is occasionally flaky)
+        last_error = None
+        for attempt in range(1, 4):
+            try:
+                capture_url = client.capture_image(
+                    user_token, NVR_SERIAL, cam["channelNo"])
+                fname = f"{timestamp}_{cam['name']}.jpg"
+                dest = output_dir / fname
+                size = download_image(capture_url, str(dest))
+                print(f"[Capture] Saved: {dest} ({size:,} bytes)")
+                results.append({"name": cam["name"], "path": str(dest), "size": size})
+                last_error = None
+                break
+            except Exception as e:
+                last_error = e
+                if attempt < 3:
+                    print(f"[Capture] Retry {attempt}/3 {cam['name']}: {e}")
+                    time.sleep(3)  # Wait a bit before retry
+                else:
+                    print(f"[Capture] ERROR (all 3 retries exhausted) {cam['name']}: {e}")
+                    results.append({"name": cam["name"], "path": None, "error": str(e)})
+        time.sleep(2)  # API rate limit between cameras
 
     return timestamp, results
 

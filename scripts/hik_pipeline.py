@@ -23,8 +23,17 @@ import sys
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+
+# Beijing timezone (UTC+8)
+BEIJING_TZ = timezone(timedelta(hours=8))
+
+
+def beijing_now():
+    """Return current datetime in Beijing timezone (UTC+8)."""
+    return datetime.now(BEIJING_TZ)
 
 
 # ==================== Configuration ====================
@@ -353,7 +362,7 @@ def save_cached_tokens(user_token, refresh_token):
         json.dump({
             "userAccessToken": user_token,
             "refreshUserToken": refresh_token,
-            "cached_at": datetime.now().isoformat(),
+            "cached_at": beijing_now().isoformat(),
         }, f, indent=2)
 
 
@@ -465,7 +474,7 @@ p { color:#94a3b8; font-size:0.95rem; }
             <img src="{img.name}?t={cache_bust}" alt="{label}" onclick="this.classList.toggle('zoom')">
         </div>"""
 
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    now = beijing_now().strftime("%Y-%m-%d %H:%M")
 
     html = f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -623,7 +632,7 @@ def run_capture(output_dir):
         print(f"[Token] Tokens cached to {TOKEN_CACHE}")
 
     # Capture from all cameras
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = beijing_now().strftime("%Y%m%d_%H%M%S")
     results = []
     for cam in CAMERAS:
         print(f"[Capture] {cam['name']} (channel={cam['channelNo']})...")
@@ -656,7 +665,7 @@ def main():
     if not args.gallery_only:
         print("=" * 50)
         print(f"Training Room Camera Capture")
-        print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Time: {beijing_now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 50)
         timestamp, results = run_capture(args.output)
         success = sum(1 for r in results if r.get("path"))

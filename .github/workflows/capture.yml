@@ -11,6 +11,8 @@ permissions:
 jobs:
   capture:
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Shanghai
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -21,6 +23,8 @@ jobs:
           python-version: '3.12'
 
       - name: Run capture pipeline
+        env:
+          TZ: Asia/Shanghai
         run: python scripts/hik_pipeline.py
 
       - name: Commit and push gallery to gh-pages

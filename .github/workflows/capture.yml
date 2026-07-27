@@ -2,22 +2,12 @@ name: Capture and Deploy
 
 on:
   schedule:
-    # Every 15 minutes
     - cron: '*/15 * * * *'
-  workflow_dispatch:  # allows manual trigger too
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+  workflow_dispatch:
 
 jobs:
   capture:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -29,24 +19,31 @@ jobs:
 
       - name: Run capture pipeline
         run: python scripts/hik_pipeline.py
-        env:
-          HIK_APP_KEY: ${{ secrets.HIK_APP_KEY }}
-          HIK_APP_SECRET: ${{ secrets.HIK_APP_SECRET }}
-          HIK_USER_NAME: ${{ secrets.HIK_USER_NAME }}
-          HIK_PASSWORD: ${{ secrets.HIK_PASSWORD }}
-          HIK_NVR_SERIAL: ${{ secrets.HIK_NVR_SERIAL }}
 
-      - name: Move gallery to root
+      - name: Commit and push gallery
         run: |
-          rm -rf gallery
-          mv scripts/gallery gallery
-          cp gallery/index.html index.html
-
-      - name: Upload artifact for Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: gallery
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          # Move gallery to a temp location
+          rm -rf /tmp/gallery
+          mv scripts/gallery /tmp/gallery
+          
+          # Remove everything except .git
+          find . -not -path './.git/*' -not -name '.git' -delete
+          
+          # Copy gallery to root
+          cp -r /tmp/gallery/* .
+          rm -rf /tmp/gallery
+          
+          # Set git config
+          git config user.name "Training Cam Bot"
+          git config user.email "bot@training-cam.local"
+          
+          # Check for changes
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No new captures, skipping deploy"
+            exit 0
+          fi
+          
+          # Commit and push to gh-pages
+          git add -A
+          git commit -m "capture $(date +%Y%m%d-%H%M%S)"
+          git push origin HEAD:gh-pages --force

@@ -543,7 +543,7 @@ header h1 {{ font-size:1.25rem; font-weight:600; }}
 <body>
 <header>
     <h1>训练室监控</h1>
-    <div class="live">实时画面 · 每 15 分钟更新</div>
+    <div class="live">每 15 分钟更新</div>
 </header>
 <div class="ts-bar">
     <span class="when">拍摄时间 {display_ts}</span>

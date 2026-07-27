@@ -20,7 +20,7 @@ jobs:
       - name: Run capture pipeline
         run: python scripts/hik_pipeline.py
 
-      - name: Commit and push gallery
+      - name: Commit and push gallery to gh-pages
         run: |
           # Move gallery to a temp location
           rm -rf /tmp/gallery

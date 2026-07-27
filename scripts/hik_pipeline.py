@@ -461,17 +461,28 @@ p { color:#94a3b8; font-size:0.95rem; }
     display_ts = (f"{latest_ts[:4]}-{latest_ts[4:6]}-{latest_ts[6:8]} "
                   f"{latest_ts[9:11]}:{latest_ts[11:13]}:{latest_ts[13:15]}")
 
-    # Build the two camera cards (side by side, large)
-    # Use timestamp as cache-busting query param so browsers always fetch fresh images
+    # Build camera cards — always show all configured cameras, with
+    # placeholder for any that failed to capture
     cache_bust = latest_ts
     cards_html = ""
-    for cam_name in sorted(cams.keys()):
-        img = cams[cam_name]
+    # Always iterate over the configured camera list so all slots appear
+    for configured_cam in CAMERAS:
+        cam_name = configured_cam["name"]
         label = cam_name.replace("_", " ")
-        cards_html += f"""
+        if cam_name in cams:
+            img = cams[cam_name]
+            cards_html += f"""
         <div class="cam">
             <div class="cam-label">{label}</div>
             <img src="{img.name}?t={cache_bust}" alt="{label}" onclick="this.classList.toggle('zoom')">
+        </div>"""
+        else:
+            # No capture for this camera — show "offline" placeholder
+            cards_html += f"""
+        <div class="cam offline">
+            <div class="cam-label">{label}</div>
+            <div class="offline-icon">📷</div>
+            <div class="offline-msg">抓拍失败<br><span>等待下次更新</span></div>
         </div>"""
 
     now = beijing_now().strftime("%Y-%m-%d %H:%M")
@@ -532,6 +543,19 @@ header h1 {{ font-size:1.25rem; font-weight:600; }}
     transform:translate(-50%,-50%) scale(2);
     z-index:9999; max-width:96vw; max-height:96vh;
     object-fit:contain; cursor:zoom-out;
+}}
+.cam.offline {{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:#1e293b;
+}}
+.offline-icon {{
+    font-size:2.5rem; margin-bottom:6px; opacity:0.4;
+}}
+.offline-msg {{
+    color:#64748b; font-size:0.9rem; text-align:center; line-height:1.5;
+}}
+.offline-msg span {{
+    font-size:0.75rem; color:#475569;
 }}
 @media (max-width:720px) {{
     .cams {{ flex-direction:column; }}

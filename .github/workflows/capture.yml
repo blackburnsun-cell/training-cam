@@ -62,3 +62,12 @@ jobs:
           git add -A
           git commit -m "capture $(date +%Y%m%d-%H%M%S)"
           git push origin HEAD:gh-pages --force
+
+      - name: Self-chain next run (backs up flaky schedule)
+        if: success() && github.event_name != 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 30
+          gh workflow run "Capture and Deploy" --ref main
+          echo "Self-chained next capture at $(date +%Y%m%d-%H%M%S)"

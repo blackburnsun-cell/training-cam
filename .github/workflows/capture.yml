@@ -63,11 +63,17 @@ jobs:
           git commit -m "capture $(date +%Y%m%d-%H%M%S)"
           git push origin HEAD:gh-pages --force
 
-      - name: Self-chain next run (backs up flaky schedule)
-        if: success() && github.event_name != 'workflow_dispatch'
+      - name: Self-chain next run (continuous heartbeat)
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          sleep 30
+          # Every successful run chains to the next workflow_dispatch.
+          # Wait 13 min (780s) to maintain ~15-min capture cadence.
+          # Run time (~2 min) + sleep (13 min) ≈ 15 min total.
+          # Note: sleep time is billed, but public repos have unlimited Actions minutes.
+          # This is more reliable than schedule cron which GitHub often skips.
+          echo "Waiting 13 min before next chain..."
+          sleep 780
           gh workflow run "Capture and Deploy" --ref main
           echo "Self-chained next capture at $(date +%Y%m%d-%H%M%S)"

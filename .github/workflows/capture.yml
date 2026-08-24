@@ -25,6 +25,36 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Persist tokens across runs so CI reuses a cached User-Access-Token
+      # instead of re-running the full (expensive) OAuth flow on every capture.
+      # After the capture + deploy steps wipe non-git files, we restore the
+      # tokens file from RUNNER_TEMP before saving the cache. This cuts the
+      # HikIoT "general API" call volume dramatically so the free quota is
+      # no longer exhausted.
+      - name: Restore cached token
+        id: token-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            scripts/tokens.json
+          key: hik-tokens
+          restore-keys: |
+            hik-tokens
+
+      # The deploy step wipes this repo's non-git files (including
+      # scripts/tokens.json), so preserve the token file out-of-band before
+      # that happens and put it back the moment checkout/cleanup is done.
+      - name: Stash tokens (pre-deploy safety)
+        if: steps.token-cache.outputs.cache-hit == 'true' || hashFiles('scripts/tokens.json') != ''
+        run: |
+          if [ -f scripts/tokens.json ]; then
+            mkdir -p /tmp/tok
+            cp scripts/tokens.json /tmp/tok/tokens.json
+            echo "Stashed tokens.json for reuse"
+          else
+            echo "No tokens.json to stash"
+          fi
+
       - name: Run capture pipeline
         env:
           TZ: Asia/Shanghai
@@ -58,11 +88,29 @@ jobs:
           git config user.email "bot@training-cam.local"
           if git diff --quiet && git diff --staged --quiet; then
             echo "No new captures, skipping deploy"
-            exit 0
+          else
+            git add -A
+            git commit -m "capture $(date +%Y%m%d-%H%M%S)"
+            git push origin HEAD:gh-pages --force
           fi
-          git add -A
-          git commit -m "capture $(date +%Y%m%d-%H%M%S)"
-          git push origin HEAD:gh-pages --force
+
+      - name: Restore stashed token before cache save
+        run: |
+          if [ -f /tmp/tok/tokens.json ]; then
+            mkdir -p scripts
+            cp /tmp/tok/tokens.json scripts/tokens.json
+            echo "Restored tokens.json to scripts/"
+          else
+            echo "No stashed token to restore"
+          fi
+
+      - name: Save cached token
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: |
+            scripts/tokens.json
+          key: hik-tokens
 
       - name: Self-chain next run (continuous heartbeat)
         if: success()

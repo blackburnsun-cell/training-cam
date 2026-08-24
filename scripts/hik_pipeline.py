@@ -238,6 +238,10 @@ class HikIoTClient:
         self.app_secret = app_secret
         self.n, self.e, self.d = parse_rsa_private_key(app_secret)
         self.key_size = (self.n.bit_length() + 7) // 8
+        # Cache app token for the lifetime of this client instance to avoid
+        # hitting exchangeAppToken on every single capture. This cuts the
+        # single biggest source of "general API" quota burn.
+        self._app_token_cache = None
 
     def _encrypt(self, data_str):
         """Encrypt a string with RSA private key, return base64."""
@@ -279,7 +283,11 @@ class HikIoTClient:
         return result
 
     def get_app_token(self):
-        """Step 1: Exchange appKey + appSecret for App-Access-Token."""
+        """Step 1: Exchange appKey + appSecret for App-Access-Token.
+        Result is cached in-process so we don't re-issue exchangeAppToken
+        on every capture call (major quota saver)."""
+        if self._app_token_cache:
+            return self._app_token_cache
         r = self._api_call(
             "/auth/exchangeAppToken", "POST",
             {"appKey": self.app_key, "appSecret": self.app_secret},
@@ -287,7 +295,8 @@ class HikIoTClient:
         )
         if r.get("code") != 0:
             raise RuntimeError(f"exchangeAppToken failed: {r}")
-        return r["data"]["appAccessToken"]
+        self._app_token_cache = r["data"]["appAccessToken"]
+        return self._app_token_cache
 
     def get_user_token(self):
         """Steps 2-3: Server-side OAuth -> authCode -> User-Access-Token.

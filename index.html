@@ -55,6 +55,19 @@ header h1 { font-size:1.25rem; font-weight:600; }
     z-index:9999; max-width:96vw; max-height:96vh;
     object-fit:contain; cursor:zoom-out;
 }
+.cam.offline {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:#1e293b;
+}
+.offline-icon {
+    font-size:2.5rem; margin-bottom:6px; opacity:0.4;
+}
+.offline-msg {
+    color:#64748b; font-size:0.9rem; text-align:center; line-height:1.5;
+}
+.offline-msg span {
+    font-size:0.75rem; color:#475569;
+}
 @media (max-width:720px) {
     .cams { flex-direction:column; }
     header h1 { font-size:1.05rem; }
@@ -65,20 +78,20 @@ header h1 { font-size:1.25rem; font-weight:600; }
 <body>
 <header>
     <h1>训练室监控</h1>
-    <div class="live">实时画面 · 每 15 分钟更新</div>
+    <div class="live">每 15 分钟更新</div>
 </header>
 <div class="ts-bar">
-    <span class="when">拍摄时间 2026-07-26 15:00:24</span>
-    <span class="updated">页面生成 2026-07-26 15:00</span>
+    <span class="when">拍摄时间 2026-09-06 06:12:57</span>
+    <span class="updated">页面生成 2026-09-06 06:13</span>
 </div>
 <div class="cams">
         <div class="cam">
             <div class="cam-label">Camera 01</div>
-            <img src="20260726_150024_Camera_01.jpg?t=20260726_150024" alt="Camera 01" onclick="this.classList.toggle('zoom')">
+            <img src="20260906_061257_Camera_01.jpg?t=20260906_061257" alt="Camera 01" onclick="this.classList.toggle('zoom')">
         </div>
         <div class="cam">
             <div class="cam-label">Camera 02</div>
-            <img src="20260726_150024_Camera_02.jpg?t=20260726_150024" alt="Camera 02" onclick="this.classList.toggle('zoom')">
+            <img src="20260906_061257_Camera_02.jpg?t=20260906_061257" alt="Camera 02" onclick="this.classList.toggle('zoom')">
         </div>
 </div>
 </body>
